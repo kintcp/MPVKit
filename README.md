@@ -1,8 +1,8 @@
 # MPVKit
 
-[![mpv](https://img.shields.io/badge/mpv-v0.39.0-blue.svg)](https://github.com/mpv-player/mpv)
-[![ffmpeg](https://img.shields.io/badge/ffmpeg-n7.0.2-blue.svg)](https://github.com/FFmpeg/FFmpeg)
-[![license](https://img.shields.io/github/license/endpne/MPVKit)](https://github.com/endpne/MPVKit/main/LICENSE)
+[![mpv](https://img.shields.io/badge/mpv-v0.41.0-blue.svg)](https://github.com/mpv-player/mpv)
+[![ffmpeg](https://img.shields.io/badge/ffmpeg-n8.0.1-blue.svg)](https://github.com/FFmpeg/FFmpeg)
+[![license](https://img.shields.io/github/license/mpvkit/MPVKit)](https://github.com/mpvkit/MPVKit/main/LICENSE)
 
 > MPVKit is only suitable for learning `libmpv` and will not be maintained too frequently.
 
@@ -21,7 +21,7 @@ Metal support only a patch version ([#7857](https://github.com/mpv-player/mpv/pu
 ### Swift Package Manager
 
 ```
-https://github.com/endpne/MPVKit.git
+https://github.com/mpvkit/MPVKit.git
 ```
 
 ### Choose which version
@@ -46,6 +46,50 @@ make clean
 make help
 ```
 
+## Make demo app using the local build version
+
+If you want the demo app to use the local build version, you need to modify `Package.swift` to reference the local build xcframework file.
+
+<details>
+<summary>Click here for more information.</summary>
+  
+```
+.binaryTarget(
+    name: "Libmpv-GPL",
+    path: "dist/release/Libmpv.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libavcodec-GPL",
+    path: "dist/release/Libavcodec.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libavdevice-GPL",
+    path: "dist/release/Libavdevice.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libavformat-GPL",
+    path: "dist/release/Libavformat.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libavfilter-GPL",
+    path: "dist/release/Libavfilter.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libavutil-GPL",
+    path: "dist/release/Libavutil.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libswresample-GPL",
+    path: "dist/release/Libswresample.xcframework.zip"
+),
+.binaryTarget(
+    name: "Libswscale-GPL",
+    path: "dist/release/Libswscale.xcframework.zip"
+),
+```
+
+</details>
+
 ## Run default mpv player
 
 ```bash
@@ -63,6 +107,7 @@ make help
 * [libshaderc-build](https://github.com/mpvkit/libshaderc-build)
 * [libluajit-build](https://github.com/mpvkit/libluajit-build)
 * [libass-build](https://github.com/mpvkit/libass-build)
+* [libbluray-build](https://github.com/mpvkit/libbluray-build)
 * [libsmbclient-build](https://github.com/mpvkit/libsmbclient-build)
 * [gnutls-build](https://github.com/mpvkit/gnutls-build)
 * [openssl-build](https://github.com/mpvkit/openssl-build)

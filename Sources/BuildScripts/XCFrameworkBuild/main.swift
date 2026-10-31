@@ -4,6 +4,9 @@ do {
     let options = try ArgumentOptions.parse(CommandLine.arguments)
     try Build.performCommand(options)
 
+    // spirv-cross
+    try BuildSpirvCross().buildALL()
+
     // SSL
     try BuildOpenSSL().buildALL()
     try BuildGmp().buildALL()
@@ -33,10 +36,11 @@ do {
     try BuildDav1d().buildALL()
     try BuildFFMPEG().buildALL()
 
-    // // mpv
-    // try BuildUchardet().buildALL()
-    // try BuildLuaJIT().buildALL()
+    // mpv
+    try BuildUchardet().buildALL()
+    try BuildLuaJIT().buildALL()
     // try BuildMPV().buildALL()
+    try BuildMPVKit().buildALL()
 } catch {
     print(error.localizedDescription)
     exit(1)
@@ -44,10 +48,10 @@ do {
 
 
 enum Library: String, CaseIterable {
-    case libmpv, FFmpeg, libshaderc, vulkan, lcms2, libdovi, openssl, libunibreak, libfreetype, libfribidi, libharfbuzz, libass, libsmbclient, libplacebo, libdav1d, gmp, nettle, gnutls, libuchardet, libbluray, libluajit, libuavs3d
+    case MPVKit, libmpv, FFmpeg, libshaderc, vulkan, lcms2, libdovi, openssl, libunibreak, libfreetype, libfribidi, libharfbuzz, libass, libsmbclient, libplacebo, libdav1d, gmp, nettle, gnutls, libuchardet, libbluray, libluajit, libuavs3d, libspirv_cross
     var version: String {
         switch self {
-        case .libmpv:
+        case .libmpv, .MPVKit:
             return "v0.41.0"
         case .FFmpeg:
             return "n8.0.1"
@@ -91,12 +95,14 @@ enum Library: String, CaseIterable {
             return "2.1.0-xcode"
         case .libuavs3d:
             return "1.2.1-xcode"
+        case .libspirv_cross:
+            return "1.4.309"
         }
     }
 
     var url: String {
         switch self {
-        case .libmpv:
+        case .libmpv, .MPVKit:
             return "https://github.com/mpv-player/mpv"
         case .FFmpeg:
             return "https://github.com/FFmpeg/FFmpeg"
@@ -140,12 +146,22 @@ enum Library: String, CaseIterable {
             return "https://github.com/mpvkit/libluajit-build/releases/download/\(self.version)/libluajit-all.zip"
         case .libuavs3d:
             return "https://github.com/mpvkit/libuavs3d-build/releases/download/\(self.version)/libuavs3d-all.zip"
+        case .libspirv_cross:
+            return "https://github.com/endpne/libspirv-cross-build/releases/download/\(self.version)/libspirv_cross-all.zip"
         }
     }
 
     // for generate Package.swift
     var targets : [PackageTarget] {
         switch self {
+        case .MPVKit:
+            return [
+                .target(
+                    name: "MPVKit",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/MPVKit.xcframework.zip",
+                    checksum: ""
+                ),
+            ]
         case .libmpv:
             return [
                 .target(
@@ -157,10 +173,40 @@ enum Library: String, CaseIterable {
         case .FFmpeg:
             return  [
                 .target(
-                    name: "FFmpeg",
-                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/FFmpeg.xcframework.zip",
-                    checksum: "" // 这里的 checksum 保持空即可，打包脚本会自动填充
-                )
+                    name: "Libavcodec",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libavcodec.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libavdevice",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libavdevice.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libavformat",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libavformat.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libavfilter",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libavfilter.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libavutil",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libavutil.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libswresample",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libswresample.xcframework.zip",
+                    checksum: ""
+                ),
+                .target(
+                    name: "Libswscale",
+                    url: "https://github.com/mpvkit/MPVKit/releases/download/\(BaseBuild.options.releaseVersion)/Libswscale.xcframework.zip",
+                    checksum: ""
+                ),
             ]
         case .openssl:
             return  [
@@ -332,6 +378,14 @@ enum Library: String, CaseIterable {
                     checksum: "https://github.com/mpvkit/libuavs3d-build/releases/download/\(self.version)/Libuavs3d.xcframework.checksum.txt"
                 ),
             ]
+        case .libspirv_cross:
+            return [
+                .target(
+                    name: "Libspirv_cross",
+                    url: "https://github.com/endpne/libspirv-cross-build/releases/download/\(self.version)/Libspirv_cross.xcframework.zip",
+                    checksum: "https://github.com/endpne/libspirv-cross-build/releases/download/\(self.version)/Libspirv_cross.xcframework.checksum.txt"
+                ),
+            ]
         }
     }
 }
@@ -411,6 +465,116 @@ private class BuildMPV: BaseBuild {
 
 }
 
+private class BuildMPVKit: BaseBuild {
+    init() {
+        super.init(library: .MPVKit)
+    }
+
+    override func flagsDependencelibrarys() -> [Library] {
+        if BaseBuild.options.enableGPL {
+            return [.gmp, .libsmbclient]
+        } else {
+            return [.gmp]
+        }
+    }
+
+
+    override func arguments(platform: PlatformType, arch: ArchType) -> [String] {
+        var array = [
+            "-Dlibmpv=true",
+            "-Dgl=enabled",
+            "-Dplain-gl=enabled",
+            "-Diconv=enabled",
+            "-Duchardet=enabled",
+            "-Dvulkan=enabled",
+            "-Dmoltenvk=enabled",  // from patch option
+            "-Dmetal=enabled",
+            "-Dshaderc=enabled",
+            "-Dspirv-cross=enabled",
+
+            "-Djavascript=disabled",
+            "-Dzimg=disabled",
+            "-Djpeg=disabled",
+            "-Dvapoursynth=disabled",
+            "-Drubberband=disabled",
+        ]
+        if BaseBuild.options.enableGPL {
+            array.append("-Dgpl=true")
+        } else {
+            array.append("-Dgpl=false")
+        }
+        let blurayLibPath = URL.currentDirectory + [Library.libbluray.rawValue, platform.rawValue, "thin", arch.rawValue]
+        if FileManager.default.fileExists(atPath: blurayLibPath.path) {
+            array.append("-Dlibbluray=enabled")
+        } else {
+            array.append("-Dlibbluray=disabled")
+        }
+        if !(platform == .macos && arch.executable) {
+            array.append("-Dcplayer=false")
+        }
+        if platform == .macos {
+            array.append("-Dswift-flags=-sdk \(platform.isysroot) -target \(platform.deploymentTarget(arch))")
+            array.append("-Dcocoa=enabled")
+            array.append("-Dcoreaudio=enabled")
+            array.append("-Davfoundation=enabled")
+            array.append("-Dgl-cocoa=enabled")
+            array.append("-Dvideotoolbox-gl=enabled")
+            array.append("-Dvideotoolbox-pl=enabled")
+            array.append("-Dlua=luajit")  // macos show video stats need enable 
+        } else {
+            array.append("-Dvideotoolbox-gl=disabled")
+            array.append("-Dvideotoolbox-pl=enabled")
+            array.append("-Dswift-build=disabled")
+            array.append("-Daudiounit=enabled")
+            array.append("-Davfoundation=disabled")
+            array.append("-Dlua=disabled")
+            if platform == .maccatalyst {
+                array.append("-Dcocoa=disabled")
+                array.append("-Dcoreaudio=disabled")
+            } else if platform == .xros || platform == .xrsimulator {
+                array.append("-Dios-gl=disabled")
+            } else {
+                array.append("-Dios-gl=enabled")
+            }
+        }
+        return array
+    }
+
+    override func ldFlags(platform: PlatformType, arch: ArchType) -> [String] {
+        var ldFlags = super.ldFlags(platform: platform, arch: arch)
+        if platform != .macos {
+            ldFlags.append(contentsOf: ["-framework", "AVFAudio"])
+        }
+        let exportSymbols = directoryURL + "\(library.rawValue).exports"
+        if FileManager.default.fileExists(atPath: exportSymbols.path) {
+            print("link with -exported_symbols_list \(exportSymbols.path)")
+        } else {
+            // create empty file
+            let content = """
+            _mpv_*
+            _libmpv_*
+            """.data(using: .utf8)
+            FileManager.default.createFile(atPath: exportSymbols.path, contents: content, attributes: nil)
+            print("link with -exported_symbols_list \(exportSymbols.path) (empty file created)")
+        }
+        ldFlags.append("-Wl,-exported_symbols_list")
+        ldFlags.append(exportSymbols.path)
+        ldFlags.append("-Wl,-x")
+        return ldFlags
+    }
+
+    override func createFramework(framework: String, platform: PlatformType) throws -> String? {
+        let frameworkDir = try super.createFramework(framework: framework, platform: platform)
+        if let frameworkDir = frameworkDir {
+            let dirPath = frameworkDir.hasSuffix("/") ? frameworkDir : frameworkDir + "/"
+            let libPath = dirPath + framework
+            _ = try? Utility.launch(path: "/usr/bin/install_name_tool", arguments: ["-id", "@rpath/\(framework).framework/\(framework)", libPath])
+        }
+        return frameworkDir
+    }
+}
+
+
 
 private class BuildFFMPEG: BaseBuild {
     init() {
@@ -481,7 +645,20 @@ private class BuildFFMPEG: BaseBuild {
     }
 
     override func frameworks() throws -> [String] {
-        return [ self.library.rawValue ]
+        var frameworks: [String] = []
+        if let platform = platforms().first {
+            if let arch = platform.architectures.first {
+                let lib = thinDir(platform: platform, arch: arch) + "lib"
+                let fileNames = try FileManager.default.contentsOfDirectory(atPath: lib.path)
+                for fileName in fileNames {
+                    if fileName.hasPrefix("lib"), fileName.hasSuffix(".a") {
+                        // 因为其他库也可能引入libavformat,所以把lib改成大写，这样就可以排在前面，覆盖别的库。
+                        frameworks.append("Lib" + fileName.dropFirst(3).dropLast(2))
+                    }
+                }
+            }
+        }
+        return frameworks
     }
 
     override func build(platform: PlatformType, arch: ArchType) throws {
@@ -564,7 +741,7 @@ private class BuildFFMPEG: BaseBuild {
         //        if platform == .isimulator || platform == .tvsimulator {
         //            arguments.append("--assert-level=1")
         //        }
-        var dependencyLibrary = [Library.gmp, .gnutls, .libfreetype, .libharfbuzz, .libfribidi, .libass, .lcms2, .libdav1d, .libuavs3d]
+        var dependencyLibrary = [Library.gmp, .gnutls, .libfreetype, .libharfbuzz, .libfribidi, .libass, .vulkan, .libshaderc, .lcms2, .libplacebo, .libdav1d, .libuavs3d]
         if BaseBuild.options.enableGPL {
             dependencyLibrary += [.libsmbclient]
         }
@@ -703,6 +880,10 @@ private class BuildFFMPEG: BaseBuild {
         "--enable-filter=vflip", "--enable-filter=volume",
         "--enable-filter=w3fdif",
         "--enable-filter=yadif",
+        "--enable-filter=avgblur_vulkan", "--enable-filter=blend_vulkan", "--enable-filter=bwdif_vulkan",
+        "--enable-filter=chromaber_vulkan", "--enable-filter=flip_vulkan", "--enable-filter=gblur_vulkan",
+        "--enable-filter=hflip_vulkan", "--enable-filter=nlmeans_vulkan", "--enable-filter=overlay_vulkan",
+        "--enable-filter=vflip_vulkan", "--enable-filter=xfade_vulkan",
     ]
 
 }
@@ -876,5 +1057,11 @@ private class BuildVulkan: ZipBaseBuild {
         }
 
         try super.afterBuild()
+    }
+}
+
+private class BuildSpirvCross: ZipBaseBuild {
+    init() {
+        super.init(library: .libspirv_cross)
     }
 }
