@@ -325,6 +325,7 @@ class BaseBuild {
             // iOS, tvOS, visionOS (xros), maccatalyst 专有 UI 框架
             systemDependencies.append(contentsOf: [
                 "-framework", "UIKit",
+                "-framework", "AVFAudio",
             ])
         }
 
