@@ -542,6 +542,9 @@ private class BuildMPVKit: BaseBuild {
 
     override func ldFlags(platform: PlatformType, arch: ArchType) -> [String] {
         var ldFlags = super.ldFlags(platform: platform, arch: arch)
+        if platform != .macos {
+            ldFlags.append(contentsOf: ["-framework", "AVFAudio"])
+        }
         let exportSymbols = directoryURL + "\(library.rawValue).exports"
         if FileManager.default.fileExists(atPath: exportSymbols.path) {
             print("link with -exported_symbols_list \(exportSymbols.path)")
