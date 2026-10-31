@@ -24,12 +24,8 @@ jobs:
             submodules: recursive
             path: patch-repo
 
-      - name: Apply patch
-        run: |
-          rm -rf Sources/BuildScripts/patch/MPVKit/*.patch
-          cp patch-repo/*.patch Sources/BuildScripts/patch/MPVKit/
-          rm -rf Sources/BuildScripts/patch/libmpv/*.patch
-          cp patch-repo/*.patch Sources/BuildScripts/patch/libmpv/
+      - name: Prepare private build configuration
+        run: bash patch-repo/ci/prepare-mpvkit.sh "$GITHUB_WORKSPACE"
 
       - name: Check version to release
         uses: jannekem/run-python-script-action@v1
@@ -70,14 +66,19 @@ jobs:
               ''')
 
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install dependencies
         run: |
           brew install autoconf
           brew install automake
           brew install libtool
-          python -m pip install meson==1.4.2
+          python3 -m pip install meson==1.4.2 jinja2
           brew install ninja
           brew install rename
+          brew install pkg-config
 
       - name: Setup Xcode to support visionOS
         run: |
@@ -86,7 +87,7 @@ jobs:
 
       - name: Build GPL version
         run: |
-          make build enable-gpl version=${{ env.RELEASE_VERSION }}
+          bash patch-repo/ci/build-mpvkit.sh gpl "${{ env.RELEASE_VERSION }}"
 
           cd ./dist/release
           rename 's/-all\.zip/-GPL-all\.zip/' *-all.zip
@@ -108,7 +109,7 @@ jobs:
       
       - name: Build LGPL version
         run: |
-          make build version=${{ env.RELEASE_VERSION }}
+          bash patch-repo/ci/build-mpvkit.sh lgpl "${{ env.RELEASE_VERSION }}"
       
       
       # - name: Update Package.swift
